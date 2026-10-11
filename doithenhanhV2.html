@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đổi Thẻ Cào Thành Tiền Mặt & Ngân Hàng</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 Thông Báo -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="h-full text-slate-100 flex flex-col justify-between font-sans antialiased">
+
+    <!-- HEADER / Thanh Menu -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchRole('user')">
+                <div class="bg-gradient-to-tr from-amber-500 to-yellow-300 p-2 rounded-xl text-slate-900 font-black text-xl shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <span class="text-base sm:text-lg font-bold text-white block leading-tight">ĐỔI THẺ NGUYÊN BẢN</span>
+                    <span class="text-xs text-amber-400 font-mono">Gạch thẻ & Rút tiền 24/7</span>
+                </div>
+            </div>
+
+            <!-- Số dư & Nút Admin -->
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <div class="flex items-center bg-slate-700/60 border border-slate-600 px-3 py-1.5 rounded-lg text-xs sm:text-sm">
+                    <span class="text-slate-400 mr-1.5">Số dư:</span>
+                    <span id="userBalanceDisplay" class="font-bold text-emerald-400">0 đ</span>
+                </div>
+                
+                <button id="toggleAdminBtn" onclick="toggleRole()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition flex items-center shadow-md">
+                    <i id="toggleAdminIcon" class="fa-solid fa-shield-halved mr-1.5"></i>
+                    <span id="toggleAdminText">Giao diện Admin</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTAINER CHÍNH -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= GIAO DIỆN KHÁCH HÀNG (USER) ================= -->
+        <div id="userSection" class="space-y-8">
+            <!-- Thông báo banner -->
+            <div class="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black text-white flex items-center">
+                        <i class="fa-solid fa-fire text-amber-500 mr-2.5 animate-bounce"></i> ĐỔI THẺ CÀO SANG TIỀN NGÂN HÀNG
+                    </h1>
+                    <p class="text-slate-400 mt-1 text-xs sm:text-sm">Hệ thống gạch thẻ tự động - Xử lý cực nhanh - Rút về ATM/MoMo 24/7.</p>
+                </div>
+            </div>
+
+            <!-- Khung Đổi Thẻ & Biểu Phí -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form Đổi Thẻ -->
+                <div class="lg:col-span-2 bg-slate-800/90 border border-slate-700 rounded-2xl p-5 sm:p-6 shadow-xl">
+                    <h2 class="text-base font-bold text-white mb-5 flex items-center">
+                        <i class="fa-solid fa-credit-card text-indigo-400 mr-2"></i> Gửi Thẻ Cào Cần Đổi
+                    </h2>
+                    
+                    <form onsubmit="handleCardSubmit(event)" class="space-y-4">
+                        <!-- Chọn Nhà Mạng -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">1. Chọn Nhà Mạng</label>
+                            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5" id="telcoGrid">
+                                <!-- Dynamic Render -->
+                            </div>
+                        </div>
+
+                        <!-- Chọn Mệnh Giá -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-2">2. Chọn Mệnh Giá Thẻ</label>
+                            <select id="cardAmountSelect" onchange="calcReceive()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 font-semibold text-sm">
+                                <option value="10000">10.000 đ</option>
+                                <option value="20000">20.000 đ</option>
+                                <option value="50000">50.000 đ</option>
+                                <option value="100000" selected>100.000 đ</option>
+                                <option value="200000">200.000 đ</option>
+                                <option value="500000">500.000 đ</option>
+                                <option value="1000000">1.000.000 đ</option>
+                            </select>
+                        </div>
+
+                        <!-- Nhập Seri & Mã PIN -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5">3. Số Seri Thẻ</label>
+                                <input type="text" id="cardSerialInput" required placeholder="Nhập số seri..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5">4. Mã Thẻ Cào (PIN)</label>
+                                <input type="text" id="cardPinInput" required placeholder="Nhập mã thẻ..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                            </div>
+                        </div>
+
+                        <!-- Hiển thị Tính Toán Chiết Khấu -->
+                        <div class="bg-slate-900/80 border border-slate-700 p-4 rounded-xl flex items-center justify-between text-xs sm:text-sm">
+                            <div>
+                                <span class="text-slate-400">Chiết khấu:</span>
+                                <span id="discountDisplay" class="font-bold text-amber-400 ml-1">15%</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-400 block">Thực nhận về ví:</span>
+                                <span id="receiveDisplay" class="text-lg font-black text-emerald-400">85.000 đ</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-900 font-black py-3 rounded-xl transition shadow-lg shadow-amber-500/20 text-sm">
+                            GỬI THẺ CÀO NGAY
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cột Rút Tiền Ngân Hàng & Bảng Phí -->
+                <div class="space-y-6">
+                    <!-- Form Rút Tiền Về Ngân Hàng -->
+                    <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-xl">
+                        <h2 class="text-base font-bold text-white mb-4 flex items-center">
+                            <i class="fa-solid fa-building-columns text-emerald-400 mr-2"></i> Rút Tiền Về Ngân Hàng / MoMo
+                        </h2>
+                        <form onsubmit="handleWithdrawSubmit(event)" class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Chọn Ngân hàng / Ví</label>
+                                <select id="withdrawBankSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none">
+                                    <option value="MBBank">MB Bank (Quan Đội)</option>
+                                    <option value="Vietcombank">Vietcombank</option>
+                                    <option value="Techcombank">Techcombank</option>
+                                    <option value="Vietinbank">Vietinbank</option>
+                                    <option value="VPBank">VPBank</option>
+                                    <option value="MoMo">Ví MoMo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Số tài khoản / SĐT nhận tiền</label>
+                                <input type="text" id="withdrawAccountInput" required placeholder="Nhập STK ngân hàng..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Tên chủ tài khoản</label>
+                                <input type="text" id="withdrawNameInput" required placeholder="Ví dụ: NGUYEN VAN A" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none uppercase">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">Số tiền muốn rút (VNĐ)</label>
+                                <input type="number" id="withdrawAmountInput" required placeholder="Tối thiểu 50.000đ" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm transition shadow-md shadow-emerald-600/20">
+                                Yêu Cầu Rút Tiền
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Bảng Chiết Khấu Nhanh -->
+                    <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl">
+                        <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center">
+                            <i class="fa-solid fa-percent text-amber-400 mr-1.5"></i> Biểu Phí Chiết Khấu Hiện Tại
+                        </h3>
+                        <div id="userDiscountList" class="space-y-2 text-xs">
+                            <!-- Dynamic Render -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lịch sử đổi thẻ & rút tiền -->
+            <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-base font-bold text-white mb-4 flex items-center">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-400 mr-2"></i> Lịch Sử Giao Dịch Của Bạn
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400 font-semibold">
+                                <th class="p-2.5">Loại</th>
+                                <th class="p-2.5">Chi tiết / Chiết khấu</th>
+                                <th class="p-2.5">Mệnh giá</th>
+                                <th class="p-2.5">Thực nhận / Rút</th>
+                                <th class="p-2.5">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userHistoryTable" class="divide-y divide-slate-700/50">
+                            <!-- Dynamic Render -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GIAO DIỆN QUẢN TRỊ (ADMIN) ================= -->
+        <div id="adminSection" class="hidden space-y-6">
+            <!-- Thống kê Admin -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block mb-1">Thẻ Chờ Duyệt</span>
+                    <span id="statPendingCards" class="text-xl font-black text-amber-400">0</span>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block mb-1">Lệnh Rút Chờ Duyệt</span>
+                    <span id="statPendingWithdraws" class="text-xl font-black text-cyan-400">0</span>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block mb-1">Tổng Thẻ Đã Duyệt</span>
+                    <span id="statApprovedCards" class="text-xl font-black text-emerald-400">0</span>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl">
+                    <span class="text-xs text-slate-400 block mb-1">Doanh Thu Tạm Tính</span>
+                    <span id="statRevenue" class="text-xl font-black text-indigo-400">0 đ</span>
+                </div>
+            </div>
+
+            <!-- Tab Admin -->
+            <div class="flex space-x-2 border-b border-slate-700 pb-2 text-xs sm:text-sm font-bold">
+                <button onclick="switchAdminTab('cards')" id="tabCardsBtn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg">Quản Lý Thẻ Cào</button>
+                <button onclick="switchAdminTab('withdraw')" id="tabWithdrawBtn" class="bg-slate-800 text-slate-300 px-3 py-2 rounded-lg hover:bg-slate-700">Duyệt Rút Tiền</button>
+                <button onclick="switchAdminTab('settings')" id="tabSettingsBtn" class="bg-slate-800 text-slate-300 px-3 py-2 rounded-lg hover:bg-slate-700">Chỉnh % Chiết Khấu</button>
+            </div>
+
+            <!-- Admin Tab 1: Duyệt Thẻ -->
+            <div id="adminTabCards" class="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+                <h3 class="text-sm font-bold text-white mb-4">Danh Sách Thẻ Khách Gửi Lên</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400">
+                                <th class="p-2.5">ID</th>
+                                <th class="p-2.5">Mạng</th>
+                                <th class="p-2.5">Mệnh Giá</th>
+                                <th class="p-2.5">Seri / Mã PIN</th>
+                                <th class="p-2.5">Cộng Ví</th>
+                                <th class="p-2.5">Trạng Thái</th>
+                                <th class="p-2.5 text-center">Thao Tác Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCardsTable" class="divide-y divide-slate-700/50">
+                            <!-- Dynamic Render -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Tab 2: Duyệt Rút Tiền Ngân Hàng -->
+            <div id="adminTabWithdraw" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-5">
+                <h3 class="text-sm font-bold text-white mb-4">Danh Sách Yêu Cầu Rút Tiền Về ATM/MoMo</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-slate-400">
+                                <th class="p-2.5">Ngân Hàng</th>
+                                <th class="p-2.5">Số Tài Khoản</th>
+                                <th class="p-2.5">Tên Chủ TK</th>
+                                <th class="p-2.5">Số Tiền Rút</th>
+                                <th class="p-2.5">Trạng Thái</th>
+                                <th class="p-2.5 text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminWithdrawTable" class="divide-y divide-slate-700/50">
+                            <!-- Dynamic Render -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Tab 3: Cài đặt Chiết khấu -->
+            <div id="adminTabSettings" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-5 max-w-md">
+                <h3 class="text-sm font-bold text-white mb-4">Cấu Hình % Chiết Khấu Chi Tiết</h3>
+                <form onsubmit="saveConfig(event)" class="space-y-3">
+                    <div id="adminDiscountInputs" class="space-y-2">
+                        <!-- Dynamic Render -->
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs transition">Lưu Cấu Hình Mới</button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-400 text-xs">
+            <p>© Website Đổi Thẻ Cào & Rút Tiền Ngân Hàng Tự Động 24/7</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT XỬ LÝ DỮ LIỆU -->
+    <script>
+        // Danh sách nhà mạng & Chiết khấu mặc định
+        let telcos = [
+            { id: 'VIETTEL', name: 'Viettel', discount: 15 },
+            { id: 'VINAPHONE', name: 'Vinaphone', discount: 16 },
+            { id: 'MOBIFONE', name: 'Mobifone', discount: 16 },
+            { id: 'ZING', name: 'Zing Card', discount: 18 },
+            { id: 'GARENA', name: 'Garena', discount: 20 },
+            { id: 'VIETNAMOBILE', name: 'V.Mobile', discount: 18 }
+        ];
+
+        let selectedTelco = 'VIETTEL';
+        let currentRole = 'user'; // 'user' hoặc 'admin'
+
+        // Dữ liệu ứng dụng (Khởi tạo từ localStorage)
+        let appState = JSON.parse(localStorage.getItem('doithe_app_data')) || {
+            balance: 185000,
+            cards: [
+                { id: 'CARD-1001', telco: 'VIETTEL', amount: 100000, receive: 85000, serial: '1000382910', pin: '883920192', status: 'success' },
+                { id: 'CARD-1002', telco: 'MOBIFONE', amount: 50000, receive: 42000, serial: '9928102910', pin: '110293019', status: 'pending' }
+            ],
+            withdraws: [
+                { id: 'WD-201', bank: 'MBBank', account: '0987654321', name: 'NGUYEN VAN A', amount: 100000, status: 'pending' }
+            ]
+        };
+
+        function saveData() {
+            localStorage.setItem('doithe_app_data', JSON.stringify(appState));
+            renderUI();
+        }
+
+        window.onload = function() {
+            renderTelcoGrid();
+            renderUI();
+        };
+
+        // Render nút chọn nhà mạng
+        function renderTelcoGrid() {
+            const grid = document.getElementById('telcoGrid');
+            grid.innerHTML = telcos.map(t => `
+                <div onclick="selectTelco('${t.id}')" class="cursor-pointer border rounded-xl p-2 text-center transition ${selectedTelco === t.id ? 'border-amber-500 bg-amber-500/10 text-white font-bold' : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600'}">
+                    <div class="text-xs font-semibold">${t.name}</div>
+                    <div class="text-[10px] text-amber-400">CK: ${t.discount}%</div>
+                </div>
+            `).join('');
+            calcReceive();
+        }
+
+        function selectTelco(id) {
+            selectedTelco = id;
+            renderTelcoGrid();
+        }
+
+        // Tính số tiền thực nhận
+        function calcReceive() {
+            const amount = parseInt(document.getElementById('cardAmountSelect').value);
+            const targetTelco = telcos.find(t => t.id === selectedTelco);
+            const discount = targetTelco ? targetTelco.discount : 15;
+            const receive = amount - (amount * discount / 100);
+
+            document.getElementById('discountDisplay').innerText = discount + '%';
+            document.getElementById('receiveDisplay').innerText = receive.toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Gửi thẻ cào
+        function handleCardSubmit(e) {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('cardAmountSelect').value);
+            const targetTelco = telcos.find(t => t.id === selectedTelco);
+            const discount = targetTelco ? targetTelco.discount : 15;
+            const receive = amount - (amount * discount / 100);
+
+            const newCard = {
+                id: 'CARD-' + Math.floor(1000 + Math.random() * 9000),
+                telco: selectedTelco,
+                amount: amount,
+                receive: receive,
+                serial: document.getElementById('cardSerialInput').value,
+                pin: document.getElementById('cardPinInput').value,
+                status: 'pending'
+            };
+
+            appState.cards.unshift(newCard);
+            saveData();
+
+            document.getElementById('cardSerialInput').value = '';
+            document.getElementById('cardPinInput').value = '';
+
+            Swal.fire({ icon: 'success', title: 'Đã gửi thẻ cào!', text: 'Hệ thống đang xử lý thẻ của bạn trong giây lát.', background: '#1e293b', color: '#fff' });
+        }
+
+        // Tạo lệnh rút tiền ngân hàng
+        function handleWithdrawSubmit(e) {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('withdrawAmountInput').value);
+
+            if (amount > appState.balance) {
+                Swal.fire({ icon: 'error', title: 'Số dư không đủ!', text: 'Vui lòng đổi thêm thẻ để nâng số dư ví.', background: '#1e293b', color: '#fff' });
+                return;
+            }
+
+            if (amount < 50000) {
+                Swal.fire({ icon: 'warning', title: 'Rút tối thiểu 50.000đ', background: '#1e293b', color: '#fff' });
+                return;
+            }
+
+            appState.balance -= amount;
+            appState.withdraws.unshift({
+                id: 'WD-' + Math.floor(100 + Math.random() * 900),
+                bank: document.getElementById('withdrawBankSelect').value,
+                account: document.getElementById('withdrawAccountInput').value,
+                name: document.getElementById('withdrawNameInput').value,
+                amount: amount,
+                status: 'pending'
+            });
+
+            saveData();
+            document.getElementById('withdrawAmountInput').value = '';
+            document.getElementById('withdrawAccountInput').value = '';
+            document.getElementById('withdrawNameInput').value = '';
+
+            Swal.fire({ icon: 'success', title: 'Đã gửi yêu cầu rút tiền!', text: 'Tiền sẽ được chuyển về ngân hàng của bạn sớm nhất.', background: '#1e293b', color: '#fff' });
+        }
+
+        // Cập nhật toàn bộ giao diện
+        function renderUI() {
+            // Số dư
+            document.getElementById('userBalanceDisplay').innerText = appState.balance.toLocaleString('vi-VN') + ' đ';
+
+            // Lịch sử User
+            const userHistory = document.getElementById('userHistoryTable');
+            userHistory.innerHTML = appState.cards.map(c => `
+                <tr class="hover:bg-slate-700/30">
+                    <td class="p-2.5 font-bold text-amber-400">Đổi thẻ</td>
+                    <td class="p-2.5">${c.telco}</td>
+                    <td class="p-2.5">${c.amount.toLocaleString()} đ</td>
+                    <td class="p-2.5 font-bold text-emerald-400">+${c.receive.toLocaleString()} đ</td>
+                    <td class="p-2.5">${getBadge(c.status)}</td>
+                </tr>
+            `).join('') + appState.withdraws.map(w => `
+                <tr class="hover:bg-slate-700/30">
+                    <td class="p-2.5 font-bold text-cyan-400">Rút ATM</td>
+                    <td class="p-2.5">${w.bank} - ${w.account}</td>
+                    <td class="p-2.5">-</td>
+                    <td class="p-2.5 font-bold text-red-400">-${w.amount.toLocaleString()} đ</td>
+                    <td class="p-2.5">${getBadge(w.status)}</td>
+                </tr>
+            `).join('');
+
+            // Bảng phí User
+            document.getElementById('userDiscountList').innerHTML = telcos.map(t => `
+                <div class="flex justify-between items-center py-1 border-b border-slate-700/40">
+                    <span class="text-slate-300">${t.name}</span>
+                    <span class="font-bold text-amber-400">${t.discount}%</span>
+                </div>
+            `).join('');
+
+            // Admin Stats
+            document.getElementById('statPendingCards').innerText = appState.cards.filter(c => c.status === 'pending').length;
+            document.getElementById('statPendingWithdraws').innerText = appState.withdraws.filter(w => w.status === 'pending').length;
+            document.getElementById('statApprovedCards').innerText = appState.cards.filter(c => c.status === 'success').length;
+            
+            const revenue = appState.cards.filter(c => c.status === 'success').reduce((sum, c) => sum + (c.amount - c.receive), 0);
+            document.getElementById('statRevenue').innerText = revenue.toLocaleString('vi-VN') + ' đ';
+
+            // Admin Cards Table
+            document.getElementById('adminCardsTable').innerHTML = appState.cards.map((c, idx) => `
+                <tr class="hover:bg-slate-700/30">
+                    <td class="p-2.5 font-mono text-slate-400">${c.id}</td>
+                    <td class="p-2.5 font-bold">${c.telco}</td>
+                    <td class="p-2.5">${c.amount.toLocaleString()} đ</td>
+                    <td class="p-2.5 font-mono text-slate-300">Seri: ${c.serial}<br>PIN: ${c.pin}</td>
+                    <td class="p-2.5 font-bold text-emerald-400">${c.receive.toLocaleString()} đ</td>
+                    <td class="p-2.5">${getBadge(c.status)}</td>
+                    <td class="p-2.5 text-center space-x-1">
+                        ${c.status === 'pending' ? `
+                            <button onclick="adminApproveCard(${idx})" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs font-bold">Duyệt</button>
+                            <button onclick="adminRejectCard(${idx})" class="bg-red-600 text-white px-2.5 py-1 rounded text-xs font-bold">Hủy</button>
+                        ` : '<span class="text-slate-500">Đã xong</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Admin Withdraw Table
+            document.getElementById('adminWithdrawTable').innerHTML = appState.withdraws.map((w, idx) => `
+                <tr class="hover:bg-slate-700/30">
+                    <td class="p-2.5 font-bold">${w.bank}</td>
+                    <td class="p-2.5 font-mono">${w.account}</td>
+                    <td class="p-2.5 font-bold text-slate-200">${w.name}</td>
+                    <td class="p-2.5 font-bold text-red-400">${w.amount.toLocaleString()} đ</td>
+                    <td class="p-2.5">${getBadge(w.status)}</td>
+                    <td class="p-2.5 text-center">
+                        ${w.status === 'pending' ? `
+                            <button onclick="adminApproveWithdraw(${idx})" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold">Đã CK Ngân Hàng</button>
+                        ` : '<span class="text-slate-500">Đã xong</span>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Admin Inputs % Chiết khấu
+            document.getElementById('adminDiscountInputs').innerHTML = telcos.map((t, i) => `
+                <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-700">
+                    <span class="text-xs font-semibold">${t.name}</span>
+                    <div class="flex items-center space-x-1">
+                        <input type="number" id="discInput-${i}" value="${t.discount}" class="w-16 bg-slate-800 border border-slate-700 text-center rounded px-1.5 py-1 text-xs text-white font-bold">
+                        <span class="text-xs text-slate-400">%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getBadge(status) {
+            if (status === 'success') return '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold">Thành công</span>';
+            if (status === 'pending') return '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold">Đang xử lý</span>';
+            return '<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full text-[10px] font-bold">Từ chối</span>';
+        }
+
+        // Thao tác của Admin
+        function adminApproveCard(idx) {
+            appState.cards[idx].status = 'success';
+            appState.balance += appState.cards[idx].receive;
+            saveData();
+        }
+
+        function adminRejectCard(idx) {
+            appState.cards[idx].status = 'rejected';
+            saveData();
+        }
+
+        function adminApproveWithdraw(idx) {
+            appState.withdraws[idx].status = 'success';
+            saveData();
+        }
+
+        function saveConfig(e) {
+            e.preventDefault();
+            telcos.forEach((t, i) => {
+                const val = parseInt(document.getElementById(`discInput-${i}`).value);
+                if (!isNaN(val)) t.discount = val;
+            });
+            renderTelcoGrid();
+            saveData();
+            Swal.fire({ icon: 'success', title: 'Lưu chiết khấu mới thành công!', background: '#1e293b', color: '#fff' });
+        }
+
+        // Chuyển đổi Khách / Admin
+        function toggleRole() {
+            if (currentRole === 'user') {
+                switchRole('admin');
+            } else {
+                switchRole('user');
+            }
+        }
+
+        function switchRole(role) {
+            currentRole = role;
+            if (role === 'admin') {
+                document.getElementById('userSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                document.getElementById('toggleAdminText').innerText = 'Trang Chủ Khách';
+                document.getElementById('toggleAdminIcon').className = 'fa-solid fa-house mr-1.5';
+            } else {
+                document.getElementById('adminSection').classList.add('hidden');
+                document.getElementById('userSection').classList.remove('hidden');
+                document.getElementById('toggleAdminText').innerText = 'Giao diện Admin';
+                document.getElementById('toggleAdminIcon').className = 'fa-solid fa-shield-halved mr-1.5';
+            }
+        }
+
+        // Chuyển Tab trong Admin
+        function switchAdminTab(tab) {
+            document.getElementById('adminTabCards').classList.add('hidden');
+            document.getElementById('adminTabWithdraw').classList.add('hidden');
+            document.getElementById('adminTabSettings').classList.add('hidden');
+
+            document.getElementById('tabCardsBtn').className = 'bg-slate-800 text-slate-300 px-3 py-2 rounded-lg hover:bg-slate-700';
+            document.getElementById('tabWithdrawBtn').className = 'bg-slate-800 text-slate-300 px-3 py-2 rounded-lg hover:bg-slate-700';
+            document.getElementById('tabSettingsBtn').className = 'bg-slate-800 text-slate-300 px-3 py-2 rounded-lg hover:bg-slate-700';
+
+            if (tab === 'cards') {
+                document.getElementById('adminTabCards').classList.remove('hidden');
+                document.getElementById('tabCardsBtn').className = 'bg-indigo-600 text-white px-3 py-2 rounded-lg';
+            } else if (tab === 'withdraw') {
+                document.getElementById('adminTabWithdraw').classList.remove('hidden');
+                document.getElementById('tabWithdrawBtn').className = 'bg-indigo-600 text-white px-3 py-2 rounded-lg';
+            } else if (tab === 'settings') {
+                document.getElementById('adminTabSettings').classList.remove('hidden');
+                document.getElementById('tabSettingsBtn').className = 'bg-indigo-600 text-white px-3 py-2 rounded-lg';
+            }
+        }
+    </script>
+</body>
+</html>
